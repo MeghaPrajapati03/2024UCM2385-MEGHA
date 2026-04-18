@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RegEx → Automaton | Thompson's Construction</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+</head>
+<body>
+  <div class="scanline"></div>
+  <div class="noise"></div>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-symbol">∑</span>
+        <div class="logo-text">
+          <span class="logo-title">AutomataLab</span>
+          <span class="logo-sub">Thompson's Construction Engine</span>
+        </div>
+      </div>
+      <nav class="tabs">
+        <button class="tab active" data-tab="enfa">ε-NFA</button>
+        <button class="tab" data-tab="dfa">DFA</button>
+        <button class="tab" data-tab="simulate">Simulate</button>
+        <button class="tab" data-tab="table">Tables</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- INPUT PANEL -->
+    <section class="input-panel">
+      <div class="input-header">
+        <span class="panel-label">REGULAR EXPRESSION</span>
+        <div class="syntax-chips">
+          <span class="chip" title="Concatenation">ab</span>
+          <span class="chip" title="Union">a|b</span>
+          <span class="chip" title="Kleene Star">a<sup>*</sup></span>
+          <span class="chip" title="Plus">a+</span>
+          <span class="chip" title="Optional">a?</span>
+          <span class="chip" title="Grouping">(ab)</span>
+        </div>
+      </div>
+      <div class="input-wrapper">
+        <div class="input-prompt">r =</div>
+        <input type="text" id="regexInput" class="regex-input" 
+               placeholder="(a|b)*abb" autocomplete="off" spellcheck="false"/>
+        <button id="buildBtn" class="build-btn">
+          <span class="btn-text">BUILD</span>
+          <span class="btn-icon">→</span>
+        </button>
+      </div>
+      <div class="presets">
+        <span class="presets-label">Presets:</span>
+        <button class="preset-btn" data-regex="(a|b)*abb">(a|b)*abb</button>
+        <button class="preset-btn" data-regex="a(b|c)*d">a(b|c)*d</button>
+        <button class="preset-btn" data-regex="(0|1)*00">(0|1)*00</button>
+        <button class="preset-btn" data-regex="a+b?c*">a+b?c*</button>
+        <button class="preset-btn" data-regex="(ab|cd)*e">(ab|cd)*e</button>
+      </div>
+      <div id="errorMsg" class="error-msg hidden"></div>
+    </section>
+
+    <!-- CANVAS AREA -->
+    <section class="canvas-section">
+      <div class="canvas-toolbar">
+        <div class="canvas-info">
+          <span id="stateCount" class="info-badge">States: —</span>
+          <span id="transCount" class="info-badge">Transitions: —</span>
+          <span id="alphabetBadge" class="info-badge">Alphabet: —</span>
+        </div>
+        <div class="canvas-controls">
+          <button class="ctrl-btn" id="zoomIn" title="Zoom In">+</button>
+          <button class="ctrl-btn" id="zoomOut" title="Zoom Out">−</button>
+          <button class="ctrl-btn" id="fitBtn" title="Fit View">⊡</button>
+          <button class="ctrl-btn" id="resetLayout" title="Relayout">↺</button>
+        </div>
+      </div>
+      <div class="canvas-container">
+        <canvas id="automataCanvas"></canvas>
+        <div class="canvas-placeholder" id="canvasPlaceholder">
+          <div class="placeholder-inner">
+            <div class="placeholder-icon">∅</div>
+            <p>Enter a regular expression above<br/>to visualize the automaton</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SIDE PANELS -->
+    <div class="side-panels">
+
+      <!-- ε-NFA PANEL -->
+      <div class="side-panel" id="tab-enfa">
+        <h3 class="panel-title">ε-NFA Construction</h3>
+        <div id="enfaInfo" class="info-block">
+          <p class="hint-text">Build an automaton to see details here.</p>
+        </div>
+        <div class="step-list" id="stepList"></div>
+      </div>
+
+      <!-- DFA PANEL -->
+      <div class="side-panel hidden" id="tab-dfa">
+        <h3 class="panel-title">DFA (Subset Construction)</h3>
+        <div id="dfaInfo" class="info-block">
+          <p class="hint-text">Build an automaton to convert to DFA.</p>
+        </div>
+      </div>
+
+      <!-- SIMULATE PANEL -->
+      <div class="side-panel hidden" id="tab-simulate">
+        <h3 class="panel-title">String Simulation</h3>
+        <div class="sim-input-wrap">
+          <input type="text" id="simInput" class="sim-input" placeholder="Enter test string…" autocomplete="off"/>
+          <button id="simBtn" class="sim-btn">TEST</button>
+        </div>
+        <div id="simResult" class="sim-result"></div>
+        <div id="simSteps" class="sim-steps"></div>
+        <div class="batch-section">
+          <h4>Batch Test</h4>
+          <textarea id="batchInput" class="batch-textarea" placeholder="One string per line…&#10;abb&#10;ab&#10;aabb"></textarea>
+          <button id="batchBtn" class="sim-btn">RUN BATCH</button>
+          <div id="batchResult" class="batch-result"></div>
+        </div>
+      </div>
+
+      <!-- TABLE PANEL -->
+      <div class="side-panel hidden" id="tab-table">
+        <h3 class="panel-title">Transition Tables</h3>
+        <div id="tableContent" class="table-wrap">
+          <p class="hint-text">Build an automaton to see transition tables.</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- LEGEND -->
+  <footer class="legend">
+    <div class="legend-item"><span class="dot start"></span>Start State</div>
+    <div class="legend-item"><span class="dot accept"></span>Accept State</div>
+    <div class="legend-item"><span class="dot normal"></span>Normal State</div>
+    <div class="legend-item"><span class="eps-label">ε</span>Epsilon Transition</div>
+    <div class="legend-sep"></div>
+    <div class="legend-item">Drag to pan · Scroll to zoom</div>
+  </footer>
+
+  <script src="js/thompson.js"></script>
+  <script src="js/subset.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
